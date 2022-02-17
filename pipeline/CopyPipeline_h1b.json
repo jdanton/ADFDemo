@@ -1,0 +1,342 @@
+{
+	"name": "CopyPipeline_h1b",
+	"properties": {
+		"activities": [
+			{
+				"name": "ForEach_h1b",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.cw_items",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Copy_h1b",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [
+								{
+									"name": "Source",
+									"value": "dbo.@{item().source.table}"
+								},
+								{
+									"name": "Destination",
+									"value": "datalake/root/@{item().destination.fileName}"
+								}
+							],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "ParquetSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "ParquetWriteSettings"
+									}
+								},
+								"enableStaging": false,
+								"validateDataConsistency": false
+							},
+							"inputs": [
+								{
+									"referenceName": "SourceDataset_h1b",
+									"type": "DatasetReference",
+									"parameters": {
+										"cw_table": "@item().source.table"
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DestinationDataset_h1b",
+									"type": "DatasetReference",
+									"parameters": {
+										"cw_fileName": "@item().destination.fileName"
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"cw_items": {
+				"type": "Array",
+				"defaultValue": [
+					{
+						"source": {
+							"table": "AdventureWorksDWBuildVersion"
+						},
+						"destination": {
+							"fileName": "dboAdventureWorksDWBuildVersion.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DatabaseLog"
+						},
+						"destination": {
+							"fileName": "dboDatabaseLog.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimAccount"
+						},
+						"destination": {
+							"fileName": "dboDimAccount.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimCurrency"
+						},
+						"destination": {
+							"fileName": "dboDimCurrency.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimCustomer"
+						},
+						"destination": {
+							"fileName": "dboDimCustomer.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimDate"
+						},
+						"destination": {
+							"fileName": "dboDimDate.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimDepartmentGroup"
+						},
+						"destination": {
+							"fileName": "dboDimDepartmentGroup.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimEmployee"
+						},
+						"destination": {
+							"fileName": "dboDimEmployee.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimGeography"
+						},
+						"destination": {
+							"fileName": "dboDimGeography.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimOrganization"
+						},
+						"destination": {
+							"fileName": "dboDimOrganization.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimProduct"
+						},
+						"destination": {
+							"fileName": "dboDimProduct.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimProductCategory"
+						},
+						"destination": {
+							"fileName": "dboDimProductCategory.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimProductSubcategory"
+						},
+						"destination": {
+							"fileName": "dboDimProductSubcategory.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimPromotion"
+						},
+						"destination": {
+							"fileName": "dboDimPromotion.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimReseller"
+						},
+						"destination": {
+							"fileName": "dboDimReseller.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimSalesReason"
+						},
+						"destination": {
+							"fileName": "dboDimSalesReason.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimSalesTerritory"
+						},
+						"destination": {
+							"fileName": "dboDimSalesTerritory.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "DimScenario"
+						},
+						"destination": {
+							"fileName": "dboDimScenario.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "FactAdditionalInternationalProductDescription"
+						},
+						"destination": {
+							"fileName": "dboFactAdditionalInternationalProductDescription.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "FactCallCenter"
+						},
+						"destination": {
+							"fileName": "dboFactCallCenter.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "FactCurrencyRate"
+						},
+						"destination": {
+							"fileName": "dboFactCurrencyRate.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "FactFinance"
+						},
+						"destination": {
+							"fileName": "dboFactFinance.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "FactInternetSales"
+						},
+						"destination": {
+							"fileName": "dboFactInternetSales.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "FactInternetSalesReason"
+						},
+						"destination": {
+							"fileName": "dboFactInternetSalesReason.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "FactProductInventory"
+						},
+						"destination": {
+							"fileName": "dboFactProductInventory.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "FactResellerSales"
+						},
+						"destination": {
+							"fileName": "dboFactResellerSales.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "FactResellerSalesXL_CCI"
+						},
+						"destination": {
+							"fileName": "dboFactResellerSalesXL_CCI.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "FactResellerSalesXL_PageCompressed"
+						},
+						"destination": {
+							"fileName": "dboFactResellerSalesXL_PageCompressed.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "FactSalesQuota"
+						},
+						"destination": {
+							"fileName": "dboFactSalesQuota.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "FactSurveyResponse"
+						},
+						"destination": {
+							"fileName": "dboFactSurveyResponse.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "NewFactCurrencyRate"
+						},
+						"destination": {
+							"fileName": "dboNewFactCurrencyRate.txt"
+						}
+					},
+					{
+						"source": {
+							"table": "ProspectiveBuyer"
+						},
+						"destination": {
+							"fileName": "dboProspectiveBuyer.txt"
+						}
+					}
+				]
+			}
+		},
+		"annotations": []
+	}
+}
