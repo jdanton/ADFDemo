@@ -1,0 +1,508 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "SnowflakeDemo"
+		},
+		"AzureSqlDatabase1_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AzureSqlDatabase1'"
+		},
+		"DataLakeStorage_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'DataLakeStorage'"
+		},
+		"AzureKeyVault_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://snowflakejsd.vault.azure.net/"
+		},
+		"DataLakeStorage_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://snowflakejsdstorage.dfs.core.windows.net"
+		},
+		"SnowflakeJSD_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'SnowflakeJSD'"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureKeyVault')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('AzureKeyVault_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlDatabase1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('AzureSqlDatabase1_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataLakeStorage')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "This is",
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('DataLakeStorage_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('DataLakeStorage_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SnowflakeJSD')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "Snowflake",
+				"typeProperties": {
+					"connectionString": "[parameters('SnowflakeJSD_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DestinationDataset_h1b')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "DataLakeStorage",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"cw_fileName": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().cw_fileName",
+							"type": "Expression"
+						},
+						"folderPath": "root",
+						"fileSystem": "datalake"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/DataLakeStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SourceDataset_h1b')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"cw_table": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": {
+						"value": "@dataset().cw_table",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CopyPipeline_h1b')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ForEach_h1b",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@pipeline().parameters.cw_items",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Copy_h1b",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [
+										{
+											"name": "Source",
+											"value": "dbo.@{item().source.table}"
+										},
+										{
+											"name": "Destination",
+											"value": "datalake/root/@{item().destination.fileName}"
+										}
+									],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "ParquetSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "ParquetWriteSettings"
+											}
+										},
+										"enableStaging": false,
+										"validateDataConsistency": false
+									},
+									"inputs": [
+										{
+											"referenceName": "SourceDataset_h1b",
+											"type": "DatasetReference",
+											"parameters": {
+												"cw_table": "@item().source.table"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DestinationDataset_h1b",
+											"type": "DatasetReference",
+											"parameters": {
+												"cw_fileName": "@item().destination.fileName"
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"cw_items": {
+						"type": "Array",
+						"defaultValue": [
+							{
+								"source": {
+									"table": "AdventureWorksDWBuildVersion"
+								},
+								"destination": {
+									"fileName": "dboAdventureWorksDWBuildVersion.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DatabaseLog"
+								},
+								"destination": {
+									"fileName": "dboDatabaseLog.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimAccount"
+								},
+								"destination": {
+									"fileName": "dboDimAccount.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimCurrency"
+								},
+								"destination": {
+									"fileName": "dboDimCurrency.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimCustomer"
+								},
+								"destination": {
+									"fileName": "dboDimCustomer.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimDate"
+								},
+								"destination": {
+									"fileName": "dboDimDate.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimDepartmentGroup"
+								},
+								"destination": {
+									"fileName": "dboDimDepartmentGroup.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimEmployee"
+								},
+								"destination": {
+									"fileName": "dboDimEmployee.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimGeography"
+								},
+								"destination": {
+									"fileName": "dboDimGeography.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimOrganization"
+								},
+								"destination": {
+									"fileName": "dboDimOrganization.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimProduct"
+								},
+								"destination": {
+									"fileName": "dboDimProduct.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimProductCategory"
+								},
+								"destination": {
+									"fileName": "dboDimProductCategory.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimProductSubcategory"
+								},
+								"destination": {
+									"fileName": "dboDimProductSubcategory.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimPromotion"
+								},
+								"destination": {
+									"fileName": "dboDimPromotion.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimReseller"
+								},
+								"destination": {
+									"fileName": "dboDimReseller.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimSalesReason"
+								},
+								"destination": {
+									"fileName": "dboDimSalesReason.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimSalesTerritory"
+								},
+								"destination": {
+									"fileName": "dboDimSalesTerritory.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "DimScenario"
+								},
+								"destination": {
+									"fileName": "dboDimScenario.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "FactAdditionalInternationalProductDescription"
+								},
+								"destination": {
+									"fileName": "dboFactAdditionalInternationalProductDescription.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "FactCallCenter"
+								},
+								"destination": {
+									"fileName": "dboFactCallCenter.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "FactCurrencyRate"
+								},
+								"destination": {
+									"fileName": "dboFactCurrencyRate.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "FactFinance"
+								},
+								"destination": {
+									"fileName": "dboFactFinance.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "FactInternetSales"
+								},
+								"destination": {
+									"fileName": "dboFactInternetSales.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "FactInternetSalesReason"
+								},
+								"destination": {
+									"fileName": "dboFactInternetSalesReason.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "FactProductInventory"
+								},
+								"destination": {
+									"fileName": "dboFactProductInventory.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "FactResellerSales"
+								},
+								"destination": {
+									"fileName": "dboFactResellerSales.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "FactResellerSalesXL_CCI"
+								},
+								"destination": {
+									"fileName": "dboFactResellerSalesXL_CCI.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "FactResellerSalesXL_PageCompressed"
+								},
+								"destination": {
+									"fileName": "dboFactResellerSalesXL_PageCompressed.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "FactSalesQuota"
+								},
+								"destination": {
+									"fileName": "dboFactSalesQuota.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "FactSurveyResponse"
+								},
+								"destination": {
+									"fileName": "dboFactSurveyResponse.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "NewFactCurrencyRate"
+								},
+								"destination": {
+									"fileName": "dboNewFactCurrencyRate.txt"
+								}
+							},
+							{
+								"source": {
+									"table": "ProspectiveBuyer"
+								},
+								"destination": {
+									"fileName": "dboProspectiveBuyer.txt"
+								}
+							}
+						]
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/SourceDataset_h1b')]",
+				"[concat(variables('factoryId'), '/datasets/DestinationDataset_h1b')]"
+			]
+		}
+	]
+}

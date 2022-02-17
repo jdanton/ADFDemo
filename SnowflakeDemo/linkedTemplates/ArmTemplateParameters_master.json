@@ -1,0 +1,30 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "SnowflakeDemo"
+		},
+		"AzureSqlDatabase1_connectionString": {
+			"value": ""
+		},
+		"DataLakeStorage_accountKey": {
+			"value": ""
+		},
+		"AzureKeyVault_properties_typeProperties_baseUrl": {
+			"value": "https://snowflakejsd.vault.azure.net/"
+		},
+		"DataLakeStorage_properties_typeProperties_url": {
+			"value": "https://snowflakejsdstorage.dfs.core.windows.net"
+		},
+		"SnowflakeJSD_connectionString": {
+			"value": ""
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}
