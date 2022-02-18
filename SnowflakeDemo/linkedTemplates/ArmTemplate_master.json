@@ -11,6 +11,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'AzureSqlDatabase1'"
 		},
+		"AzureSqlDatabase2_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AzureSqlDatabase2'"
+		},
 		"DataLakeStorage_accountKey": {
 			"type": "secureString",
 			"metadata": "Secure string for 'accountKey' of 'DataLakeStorage'"
@@ -26,6 +30,10 @@
 		"SnowflakeJSD_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'SnowflakeJSD'"
+		},
+		"SnowflakeStereaming_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'SnowflakeStereaming'"
 		},
 		"stagestorage_sasUri": {
 			"type": "secureString",
@@ -61,6 +69,9 @@
 					"AzureSqlDatabase1_connectionString": {
 						"value": "[parameters('AzureSqlDatabase1_connectionString')]"
 					},
+					"AzureSqlDatabase2_connectionString": {
+						"value": "[parameters('AzureSqlDatabase2_connectionString')]"
+					},
 					"DataLakeStorage_accountKey": {
 						"value": "[parameters('DataLakeStorage_accountKey')]"
 					},
@@ -72,6 +83,9 @@
 					},
 					"SnowflakeJSD_connectionString": {
 						"value": "[parameters('SnowflakeJSD_connectionString')]"
+					},
+					"SnowflakeStereaming_connectionString": {
+						"value": "[parameters('SnowflakeStereaming_connectionString')]"
 					},
 					"stagestorage_sasUri": {
 						"value": "[parameters('stagestorage_sasUri')]"
