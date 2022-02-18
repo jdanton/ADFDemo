@@ -19,6 +19,9 @@
 		},
 		"SnowflakeJSD_connectionString": {
 			"value": ""
+		},
+		"stagestorage_sasUri": {
+			"value": ""
 		}
 	}
 }

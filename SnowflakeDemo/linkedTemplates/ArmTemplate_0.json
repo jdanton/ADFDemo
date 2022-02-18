@@ -26,6 +26,10 @@
 		"SnowflakeJSD_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'SnowflakeJSD'"
+		},
+		"stagestorage_sasUri": {
+			"type": "secureString",
+			"metadata": "Secure string for 'sasUri' of 'stagestorage'"
 		}
 	},
 	"variables": {
@@ -90,6 +94,19 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/stagestorage')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"sasUri": "[parameters('stagestorage_sasUri')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/DestinationDataset_h1b')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -124,7 +141,65 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/DestinationDataset_yes')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "SnowflakeJSD",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"cw_table": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "SnowflakeTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "DBO",
+					"table": {
+						"value": "@dataset().cw_table",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/SnowflakeJSD')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/SourceDataset_h1b')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"cw_table": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": {
+						"value": "@dataset().cw_table",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SourceDataset_yes')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
 			"properties": {
@@ -502,6 +577,365 @@
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/SourceDataset_h1b')]",
 				"[concat(variables('factoryId'), '/datasets/DestinationDataset_h1b')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CopyPipeline_yes')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ForEach_yes",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@pipeline().parameters.cw_items",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Copy_yes",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [
+										{
+											"name": "Source",
+											"value": "dbo.@{item().source.table}"
+										},
+										{
+											"name": "Destination",
+											"value": "DBO.@{item().destination.table}"
+										}
+									],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "SnowflakeSink",
+											"importSettings": {
+												"type": "SnowflakeImportCopyCommand"
+											}
+										},
+										"enableStaging": true,
+										"stagingSettings": {
+											"linkedServiceName": {
+												"referenceName": "stagestorage",
+												"type": "LinkedServiceReference"
+											},
+											"path": "data",
+											"enableCompression": true
+										},
+										"parallelCopies": 8,
+										"enableSkipIncompatibleRow": true
+									},
+									"inputs": [
+										{
+											"referenceName": "SourceDataset_yes",
+											"type": "DatasetReference",
+											"parameters": {
+												"cw_table": "@item().source.table"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DestinationDataset_yes",
+											"type": "DatasetReference",
+											"parameters": {
+												"cw_table": "@item().destination.table"
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"cw_items": {
+						"type": "Array",
+						"defaultValue": [
+							{
+								"source": {
+									"table": "AdventureWorksDWBuildVersion"
+								},
+								"destination": {
+									"table": "ADVENTUREWORKSDWBUILDVERSION"
+								}
+							},
+							{
+								"source": {
+									"table": "DatabaseLog"
+								},
+								"destination": {
+									"table": "DATABASELOG"
+								}
+							},
+							{
+								"source": {
+									"table": "DimAccount"
+								},
+								"destination": {
+									"table": "DIMACCOUNT"
+								}
+							},
+							{
+								"source": {
+									"table": "DimCurrency"
+								},
+								"destination": {
+									"table": "DIMCURRENCY"
+								}
+							},
+							{
+								"source": {
+									"table": "DimCustomer"
+								},
+								"destination": {
+									"table": "DIMCUSTOMER"
+								}
+							},
+							{
+								"source": {
+									"table": "DimDate"
+								},
+								"destination": {
+									"table": "DIMDATE"
+								}
+							},
+							{
+								"source": {
+									"table": "DimDepartmentGroup"
+								},
+								"destination": {
+									"table": "DIMDEPARTMENTGROUP"
+								}
+							},
+							{
+								"source": {
+									"table": "DimEmployee"
+								},
+								"destination": {
+									"table": "DIMEMPLOYEE"
+								}
+							},
+							{
+								"source": {
+									"table": "DimGeography"
+								},
+								"destination": {
+									"table": "DIMGEOGRAPHY"
+								}
+							},
+							{
+								"source": {
+									"table": "DimOrganization"
+								},
+								"destination": {
+									"table": "DIMORGANIZATION"
+								}
+							},
+							{
+								"source": {
+									"table": "DimProduct"
+								},
+								"destination": {
+									"table": "DIMPRODUCT"
+								}
+							},
+							{
+								"source": {
+									"table": "DimProductCategory"
+								},
+								"destination": {
+									"table": "DIMPRODUCTCATEGORY"
+								}
+							},
+							{
+								"source": {
+									"table": "DimProductSubcategory"
+								},
+								"destination": {
+									"table": "DIMPRODUCTSUBCATEGORY"
+								}
+							},
+							{
+								"source": {
+									"table": "DimPromotion"
+								},
+								"destination": {
+									"table": "DIMPROMOTION"
+								}
+							},
+							{
+								"source": {
+									"table": "DimReseller"
+								},
+								"destination": {
+									"table": "DIMRESELLER"
+								}
+							},
+							{
+								"source": {
+									"table": "DimSalesReason"
+								},
+								"destination": {
+									"table": "DIMSALESREASON"
+								}
+							},
+							{
+								"source": {
+									"table": "DimSalesTerritory"
+								},
+								"destination": {
+									"table": "DIMSALESTERRITORY"
+								}
+							},
+							{
+								"source": {
+									"table": "DimScenario"
+								},
+								"destination": {
+									"table": "DIMSCENARIO"
+								}
+							},
+							{
+								"source": {
+									"table": "FactAdditionalInternationalProductDescription"
+								},
+								"destination": {
+									"table": "FACTADDITIONALINTERNATIONALPRODUCTDESCRIPTION"
+								}
+							},
+							{
+								"source": {
+									"table": "FactCallCenter"
+								},
+								"destination": {
+									"table": "FACTCALLCENTER"
+								}
+							},
+							{
+								"source": {
+									"table": "FactCurrencyRate"
+								},
+								"destination": {
+									"table": "FACTCURRENCYRATE"
+								}
+							},
+							{
+								"source": {
+									"table": "FactFinance"
+								},
+								"destination": {
+									"table": "FACTFINANCE"
+								}
+							},
+							{
+								"source": {
+									"table": "FactInternetSales"
+								},
+								"destination": {
+									"table": "FACTINTERNETSALES"
+								}
+							},
+							{
+								"source": {
+									"table": "FactInternetSalesReason"
+								},
+								"destination": {
+									"table": "FACTINTERNETSALESREASON"
+								}
+							},
+							{
+								"source": {
+									"table": "FactProductInventory"
+								},
+								"destination": {
+									"table": "FACTPRODUCTINVENTORY"
+								}
+							},
+							{
+								"source": {
+									"table": "FactResellerSales"
+								},
+								"destination": {
+									"table": "FACTRESELLERSALES"
+								}
+							},
+							{
+								"source": {
+									"table": "FactResellerSalesXL_CCI"
+								},
+								"destination": {
+									"table": "FACTRESELLERSALESXL_CCI"
+								}
+							},
+							{
+								"source": {
+									"table": "FactResellerSalesXL_PageCompressed"
+								},
+								"destination": {
+									"table": "FACTRESELLERSALESXLPAGECOMPRESSED"
+								}
+							},
+							{
+								"source": {
+									"table": "FactSalesQuota"
+								},
+								"destination": {
+									"table": "FACTSALESQUOTA"
+								}
+							},
+							{
+								"source": {
+									"table": "FactSurveyResponse"
+								},
+								"destination": {
+									"table": "FACTSURVEYRESPONSE"
+								}
+							},
+							{
+								"source": {
+									"table": "NewFactCurrencyRate"
+								},
+								"destination": {
+									"table": "NEWFACTCURRENCYRATE"
+								}
+							},
+							{
+								"source": {
+									"table": "ProspectiveBuyer"
+								},
+								"destination": {
+									"table": "PROSPECTIVEBUYER"
+								}
+							}
+						]
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/SourceDataset_yes')]",
+				"[concat(variables('factoryId'), '/datasets/DestinationDataset_yes')]",
+				"[concat(variables('factoryId'), '/linkedServices/stagestorage')]"
 			]
 		}
 	]
