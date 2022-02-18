@@ -48,7 +48,7 @@
 								"enableStaging": true,
 								"stagingSettings": {
 									"linkedServiceName": {
-										"referenceName": "DataLakeStorage",
+										"referenceName": "stagestorage",
 										"type": "LinkedServiceReference"
 									},
 									"path": "data",
