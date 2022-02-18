@@ -1,0 +1,16 @@
+{
+	"name": "DestinationDataset_m7i",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "SnowflakeStereaming",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "SnowflakeTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "PUBLIC",
+			"table": "RAWDATA"
+		}
+	}
+}

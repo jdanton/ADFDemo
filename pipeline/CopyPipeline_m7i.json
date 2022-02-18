@@ -1,0 +1,62 @@
+{
+	"name": "CopyPipeline_m7i",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy_m7i",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [
+					{
+						"name": "Source",
+						"value": "dbo.rawdata"
+					},
+					{
+						"name": "Destination",
+						"value": "PUBLIC.RAWDATA"
+					}
+				],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "SnowflakeSink",
+						"importSettings": {
+							"type": "SnowflakeImportCopyCommand"
+						}
+					},
+					"enableStaging": true,
+					"stagingSettings": {
+						"linkedServiceName": {
+							"referenceName": "stagestorage",
+							"type": "LinkedServiceReference"
+						},
+						"path": "data"
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "SourceDataset_m7i",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DestinationDataset_m7i",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"annotations": []
+	}
+}
